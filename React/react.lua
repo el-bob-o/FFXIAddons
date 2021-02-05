@@ -1,11 +1,8 @@
 --[[
-
 Copyright © 2016, Sammeh of Quetzalcoatl
 All rights reserved.
-
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
-
     * Redistributions of source code must retain the above copyright
       notice, this list of conditions and the following disclaimer.
     * Redistributions in binary form must reproduce the above copyright
@@ -14,7 +11,6 @@ modification, are permitted provided that the following conditions are met:
     * Neither the name of React nor the
       names of its contributors may be used to endorse or promote products
       derived from this software without specific prior written permission.
-
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
 ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
@@ -25,12 +21,11 @@ LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-
 ]]
 
 _addon.name = 'React'
 _addon.author = 'Sammeh'
-_addon.version = '1.6.0.0'
+_addon.version = '1.6.0.0.1'
 _addon.command = 'react'
 
 -- 1.3.0 changing map.lua to job specific
@@ -52,6 +47,7 @@ _addon.command = 'react'
 
 -- 1.6.0.0 Add "ActorID" as global variable for use in custom commands
 -- Planned: 1.6.0.1 add in Global commands:   if (Mob specific) then react;  elseif (global) then react; else - no react
+-- 1.6.0.0.1Added facemob_delay to force a delay before facing the mob after turnaround.
 
 require 'tables'
 require 'sets'
@@ -59,6 +55,7 @@ require 'strings'
 require 'actions'
 require 'pack'
 require 'logger'
+require 'coroutine'
 files = require 'files'
 require('chat')
 res = require 'resources'
@@ -266,6 +263,11 @@ function reaction(actor,category,ability,primarytarget)
 						if showcmds == 1 then 
 							windower.add_to_chat(chatcolor,"----- React Action: Facing Mob")
 						end
+					elseif custom_reactions[actor.name][ability.en].ready_reaction:lower() == 'facemob_delay' then -- Added delay
+						facemob_delay(actor)
+						if showcmds == 1 then 
+							windower.add_to_chat(chatcolor,"----- React Action: Facing Mob delayed")
+						end
 					elseif string.find(custom_reactions[actor.name][ability.en].ready_reaction:lower(), 'runaway') then 
 						local actionstring = custom_reactions[actor.name][ability.en].ready_reaction:lower()
 						local run_distance = string.match(actionstring,"%d+")
@@ -299,6 +301,11 @@ function reaction(actor,category,ability,primarytarget)
 						facemob(actor)
 						if showcmds == 1 then 
 							windower.add_to_chat(chatcolor,"----- React Action: Facing")
+						end
+					elseif custom_reactions[actor.name][ability.en].complete_reaction:lower() == 'facemob_delay' then -- Added delay
+						facemob_delay(actor)
+						if showcmds == 1 then 
+							windower.add_to_chat(chatcolor,"----- React Action: Facing Mob delayed")
 						end
 					elseif string.find(custom_reactions[actor.name][ability.en].complete_reaction:lower(), 'runaway') then 
 						local actionstring = custom_reactions[actor.name][ability.en].complete_reaction:lower()
@@ -417,6 +424,7 @@ windower.register_event('addon command', function(command, ...)
 		windower.add_to_chat(2,'remove:  Removes action/reaction from a Monster.  ARGS[1]"Monster" ARGS[2]"Action"')
 		windower.add_to_chat(2,'debugmode: Print to console all moves capable of reacting')
 		windower.add_to_chat(2,'showcmds: Print to Chat Log cmds Executed')
+		windower.add_to_chat(2,'Added command facemob_delay   this will wait 4 seconds before faceing the mob after turnaround')
 	end
 
 	if command:lower() == 'turnaround' then
@@ -426,6 +434,10 @@ windower.register_event('addon command', function(command, ...)
     if command:lower() == 'facemob' then
         facemob()
     end
+	
+	if command:lower() == 'facemob_delay' then -- Added Delay
+		facemob_delay()
+	end
 	
 	if command:lower() == 'runaway' then 
 		local rundistance = args[1] or 35 -- Setting Default run distance to 35
@@ -496,6 +508,23 @@ function facemob(actor)
 	end
 	local self_vector = windower.ffxi.get_mob_by_index(windower.ffxi.get_player().index or 0)
 	if target then  -- Please note if you target yourself you will face Due East
+		local angle = (math.atan2((target.y - self_vector.y), (target.x - self_vector.x))*180/math.pi)*-1
+		windower.ffxi.turn((angle):radian())
+	else
+		windower.add_to_chat(10,"React: You're not targeting anything to face")
+	end
+end
+
+function facemob_delay(actor) -- Added to force a delay before facing the mob
+	local target = {}
+	if actor then
+		target = actor
+	else 
+		target = windower.ffxi.get_mob_by_index(windower.ffxi.get_player().target_index or 0)
+	end
+	local self_vector = windower.ffxi.get_mob_by_index(windower.ffxi.get_player().index or 0)
+	if target then  -- Please note if you target yourself you will face Due East
+		coroutine.sleep(4) -- This number is the delay in seconds
 		local angle = (math.atan2((target.y - self_vector.y), (target.x - self_vector.x))*180/math.pi)*-1
 		windower.ffxi.turn((angle):radian())
 	else
