@@ -47,7 +47,7 @@ _addon.command = 'react'
 
 -- 1.6.0.0 Add "ActorID" as global variable for use in custom commands
 -- Planned: 1.6.0.1 add in Global commands:   if (Mob specific) then react;  elseif (global) then react; else - no react
--- 1.6.0.0.1Added facemob_delay to force a delay before facing the mob after turnaround.
+-- 1.6.0.0.1 Added facemob_delay to force a delay before facing the mob after turnaround.
 
 require 'tables'
 require 'sets'
@@ -66,6 +66,8 @@ chatcolor = 8
 -- Auto Run = Off
 autorun = 0
 
+-- Default setting for facemob_delay
+face_delay = 4  
 
 if windower.ffxi.get_player() then 
  self = windower.ffxi.get_player()
@@ -248,6 +250,7 @@ windower.register_event('prerender', function()
 end)
 
 
+
 function reaction(actor,category,ability,primarytarget)
 	if custom_reactions[actor.name] then 
 		if custom_reactions[actor.name][ability.en] then
@@ -263,10 +266,12 @@ function reaction(actor,category,ability,primarytarget)
 						if showcmds == 1 then 
 							windower.add_to_chat(chatcolor,"----- React Action: Facing Mob")
 						end
-					elseif custom_reactions[actor.name][ability.en].ready_reaction:lower() == 'facemob_delay' then -- Added delay
+					elseif string.find(custom_reactions[actor.name][ability.en].ready_reaction:lower(), 'facemob_delay') then -- Added delay
+						local actionstring = custom_reactions[actor.name][ability.en].ready_reaction:lower() 
+						local face_delay = string.match(actionstring,"%d+")
 						facemob_delay(actor)
 						if showcmds == 1 then 
-							windower.add_to_chat(chatcolor,"----- React Action: Facing Mob delayed")
+							windower.add_to_chat(chatcolor,"----- React Action: Facing Mob delayed "..face_delay.." seconds.")
 						end
 					elseif string.find(custom_reactions[actor.name][ability.en].ready_reaction:lower(), 'runaway') then 
 						local actionstring = custom_reactions[actor.name][ability.en].ready_reaction:lower()
@@ -302,10 +307,12 @@ function reaction(actor,category,ability,primarytarget)
 						if showcmds == 1 then 
 							windower.add_to_chat(chatcolor,"----- React Action: Facing")
 						end
-					elseif custom_reactions[actor.name][ability.en].complete_reaction:lower() == 'facemob_delay' then -- Added delay
+					elseif string.find(custom_reactions[actor.name][ability.en].complete_reaction:lower(), 'facemob_delay') then -- Added delay
+						local actionstring = custom_reactions[actor.name][ability.en].complete_reaction:lower() 
+						local face_delay = string.match(actionstring,"%d+")
 						facemob_delay(actor)
 						if showcmds == 1 then 
-							windower.add_to_chat(chatcolor,"----- React Action: Facing Mob delayed")
+							windower.add_to_chat(chatcolor,"----- React Action: Facing Mob delayed "..face_delay.." seconds.")
 						end
 					elseif string.find(custom_reactions[actor.name][ability.en].complete_reaction:lower(), 'runaway') then 
 						local actionstring = custom_reactions[actor.name][ability.en].complete_reaction:lower()
@@ -424,7 +431,7 @@ windower.register_event('addon command', function(command, ...)
 		windower.add_to_chat(2,'remove:  Removes action/reaction from a Monster.  ARGS[1]"Monster" ARGS[2]"Action"')
 		windower.add_to_chat(2,'debugmode: Print to console all moves capable of reacting')
 		windower.add_to_chat(2,'showcmds: Print to Chat Log cmds Executed')
-		windower.add_to_chat(2,'Added command facemob_delay   this will wait 4 seconds before faceing the mob after turnaround')
+		windower.add_to_chat(2,'Added command facemob_delay   this will wait 4 seconds (or a specified amount of time) before faceing the mob after turnaround')
 	end
 
 	if command:lower() == 'turnaround' then
@@ -436,7 +443,8 @@ windower.register_event('addon command', function(command, ...)
     end
 	
 	if command:lower() == 'facemob_delay' then -- Added Delay
-		facemob_delay()
+		local face_delay = args[1] or 4 -- Setting default facemob delay to 4 seconds
+		facemob_delay(face_delay)
 	end
 	
 	if command:lower() == 'runaway' then 
@@ -524,7 +532,7 @@ function facemob_delay(actor) -- Added to force a delay before facing the mob
 	end
 	local self_vector = windower.ffxi.get_mob_by_index(windower.ffxi.get_player().index or 0)
 	if target then  -- Please note if you target yourself you will face Due East
-		coroutine.sleep(4) -- This number is the delay in seconds
+		coroutine.sleep(face_delay) -- This is delay for facemob_delay
 		local angle = (math.atan2((target.y - self_vector.y), (target.x - self_vector.x))*180/math.pi)*-1
 		windower.ffxi.turn((angle):radian())
 	else
