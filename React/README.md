@@ -43,6 +43,6 @@ React 1.6.0.0 - adds in $ACTORID variable to use in a reaction. Useful for sendi
 
 React 1.6.0.0.1 - Added an option to delay facemob - facemob_delay - In its default setting it will count 4 seconds before executing facemob. require 'coroutine' has been added to the file to handle the timing function.
 
-**//react add Mobname "Action" complete "facemob_delay x"   x= an integer.  There is no error handling as of now so be careful with your input.
-\//react add "Lady Lilith" "Dark Thorn" complete "facemob_delay 2"
+**//react add Mobname "Action" complete "facemob_delay x"   x= an integer.  There is no error handling as of now so be careful with your input.\
+//react add "Lady Lilith" "Dark Thorn" complete "facemob_delay 2"
 This will add 2 seconds before turning to face the mob.**
